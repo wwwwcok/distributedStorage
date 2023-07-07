@@ -1,0 +1,25 @@
+//安装rabbitmq
+mkdir /data/rabbitmq -p
+
+docker run -d --hostname rabbit-svr --name rabbit -p 5672:5672 -p 15672:15672 -p 25672:25672 -v /data/rabbitmq:/var/lib/rabbitmq rabbitmq:management
+
+protoc --proto_path=./service/account/proto --go_out=./service/account/proto --micro_out=./service/account/proto --micro_opt=version:v3 ./service/account/proto/user.proto
+//upload.proto
+
+protoc --proto_path=./service/upload/proto --go_out=./service/upload/proto --micro_out=./service/upload/proto --micro_opt=version:v3 ./service/upload/proto/upload.proto
+
+protoc --proto_path=./service/download/proto --go_out=./service/download/proto --micro_out=./service/download/proto --micro_opt=version:v3 ./service/download/proto/download.proto
+
+
+//安装micro
+docker network create --subnet 172.172.0.0/16 conSul
+
+docker run --name consul1 -d -p 8500:8500 -p 8300:8300 -p 8301:8301 -p 8302:8302 -p 8600:8600 consul agent -server -bootstrap-expect 2 -ui -bind=0.0.0.0 -client=0.0.0.0
+docker run --name consul1 -d -p 8500:8500 -p 8300:8300 -p 8301:8301 -p 8302:8302 -p 8600:8600 consul agent -server -ui -bind=0.0.0.0 -client=0.0.0.0
+
+
+docker run --name consul2 -d -p 8501:8500 consul agent -server -ui -bind=0.0.0.0 -client=0.0.0.0 -join 172.17.0.2
+docker exec -it consul2 sh consul agent -server -ui -bind=0.0.0.0 -client=0.0.0.0 -join 172.172.0.2
+
+docker run --name consul3 -d -p 8502:8500 consul agent -server -ui -bind=0.0.0.0 -client=0.0.0.0 -join 172.17.0.2
+docker exec -it consul3 consul agent -server -ui -bind=0.0.0.0 -client=0.0.0.0 -rejoin 172.172.0.2
